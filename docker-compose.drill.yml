@@ -1,0 +1,58 @@
+# Restore drill: bring a backup up on a scratch machine with no DNS, no certificate,
+# and NO internet access for n8n.
+#
+# Why no internet: a restored n8n comes back with its workflows active. On a machine
+# that can reach the internet, schedules fire and polling triggers poll, and
+# yesterday's emails, invoices or CRM writes happen a second time, from the drill box.
+# Here the edge network becomes internal (no route out), and a small proxy, the only
+# container with a published port, forwards 127.0.0.1:5678 to n8n.
+#
+#   export COMPOSE_FILES="docker-compose.yml docker-compose.drill.yml"   # read by scripts/
+#   docker compose -f docker-compose.yml -f docker-compose.drill.yml up -d postgres n8n drill-proxy
+#   sudo COMPOSE_FILES="$COMPOSE_FILES" ./scripts/restore.sh <STAMP> --skip-safety-backup
+#   ssh -L 5678:127.0.0.1:5678 you@drill-host        then open http://localhost:5678
+#
+# The port is bound to 127.0.0.1, so it is not exposed even though Docker bypasses ufw.
+# Never use this file on the production server.
+services:
+  n8n:
+    environment:
+      N8N_PROTOCOL: http
+      N8N_WEBHOOK_URL: http://localhost:5678/
+      N8N_SECURE_COOKIE: "false"
+
+  drill-proxy:
+    image: nginx:1.30-alpine
+    # edge is internal in this file; drill_uplink exists only so Docker can publish
+    # the port (it does not publish ports of containers on internal networks only).
+    networks:
+      - edge
+      - drill_uplink
+    ports:
+      - "127.0.0.1:5678:8080"
+    command:
+      - /bin/sh
+      - -c
+      - |
+        cat > /etc/nginx/conf.d/default.conf <<'EOF'
+        server {
+            listen 8080;
+            resolver 127.0.0.11 valid=10s ipv6=off;
+            location / {
+                set $$upstream http://n8n:5678;
+                proxy_pass $$upstream;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $$http_upgrade;
+                proxy_set_header Connection "upgrade";
+                proxy_set_header Host $$host;
+                proxy_set_header X-Forwarded-For $$remote_addr;
+                proxy_set_header X-Forwarded-Proto http;
+            }
+        }
+        EOF
+        exec nginx -g 'daemon off;'
+
+networks:
+  edge:
+    internal: true
+  drill_uplink: {}

@@ -1,0 +1,7 @@
+# Everything is checked out with LF. The shell scripts and nginx templates are
+# executed or mounted on Linux; a CRLF line ending breaks them in confusing ways
+# ("/bin/sh^M: bad interpreter", "unknown directive" with an invisible \r).
+* text=auto eol=lf
+*.sh text eol=lf
+*.template text eol=lf
+*.yml text eol=lf

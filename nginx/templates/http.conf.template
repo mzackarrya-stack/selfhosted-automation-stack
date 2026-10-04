@@ -1,0 +1,46 @@
+# Rendered by /opt/nginx/start.sh. envsubst replaces only the N8N_HOST and HTTP_ACTION
+# placeholders; every other $variable below is nginx's own.
+
+server_tokens off;
+
+# Docker's embedded DNS. The HTTPS server resolves the n8n container per request
+# (valid=10s), so recreating n8n with a new IP does not leave nginx proxying to
+# the old one until someone restarts it.
+resolver 127.0.0.11 valid=10s ipv6=off;
+
+# Requests for any other name (scanners hitting the bare IP): close without answering.
+server {
+    listen 80 default_server;
+    server_name _;
+
+    # Container healthcheck. `allow/deny` would not work here: `return` runs in
+    # the rewrite phase, before access rules are evaluated, so the check is an `if`.
+    location = /nginx-health {
+        access_log off;
+        if ($remote_addr != "127.0.0.1") {
+            return 444;
+        }
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    location / {
+        return 444;
+    }
+}
+
+server {
+    listen 80;
+    server_name ${N8N_HOST};
+
+    # Let's Encrypt HTTP-01 challenges, written by the certbot container.
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+        default_type text/plain;
+    }
+
+    # Redirect to HTTPS once a certificate exists; a plain 503 explaining why until then.
+    location / {
+        ${HTTP_ACTION}
+    }
+}

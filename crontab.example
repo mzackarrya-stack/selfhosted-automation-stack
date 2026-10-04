@@ -1,0 +1,17 @@
+# /etc/cron.d/n8n-stack
+#
+#   sudo mkdir -p /var/log/n8n-stack
+#   sudo cp crontab.example /etc/cron.d/n8n-stack   # then fix the path below if needed
+#   sudo chmod 644 /etc/cron.d/n8n-stack
+#
+# System crontab format: the sixth field is the user. Times are the server's local time.
+# Cron's PATH is minimal; docker, curl and rclone live in the directories below.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Nightly backup at 03:17 (an odd minute: off the top of the hour when every other
+# cron job and remote storage peak happen).
+17 3 * * *   root  /opt/n8n-stack/scripts/backup.sh >> /var/log/n8n-stack/backup.log 2>&1
+
+# Health check every 5 minutes. --quiet logs only failures and alerts.
+*/5 * * * *  root  /opt/n8n-stack/scripts/healthcheck.sh --quiet >> /var/log/n8n-stack/health.log 2>&1

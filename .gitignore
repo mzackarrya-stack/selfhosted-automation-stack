@@ -1,0 +1,22 @@
+# Secrets. Only the example is tracked.
+.env
+.env.*
+!.env.example
+
+# Backups and anything that looks like one
+backups/
+*.dump
+*.tar.gz
+*.partial
+*.sha256
+
+# Health-check state if pointed inside the repo
+*.state
+*.state.lock
+
+# Editors / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db

@@ -1,0 +1,12 @@
+# /etc/logrotate.d/n8n-stack
+# Rotates the cron logs written by crontab.example, so the monitoring cannot become
+# the thing that fills the disk. Each cron run reopens the file, so no copytruncate.
+/var/log/n8n-stack/*.log {
+    weekly
+    rotate 8
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 root root
+}
