@@ -286,3 +286,6 @@ Telegram uniquement quand l'état change, et un script de durcissement du serveu
 à adapter, vérifié localement, pas un service géré.
 
 MIT licensed.
+
+Want it running on your own server without doing it yourself? Fixed-price setup, in writing:
+[self-hosted n8n on your server](https://contra.com/s/6OmNbrZ6-self-hosted-n8n-on-your-server-docker-postgres-ssl).
